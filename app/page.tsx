@@ -1,94 +1,117 @@
 "use client";
 
-import { useMockStore } from "@/hooks/use-mock-store";
+import { useState, useEffect } from "react";
 import { NotionSidebar } from "@/components/sidebar/sidebar";
 import DocumentEditor from "@/components/editor/editor";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+import { 
+  getOrCreateWorkspace, 
+  getDocuments, 
+  createDocument, 
+  updateDocument 
+} from "@/app/actions/documents";
+import { Document, Workspace } from "@/lib/schema";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function NotionClone() {
-  const { documents, createDoc, updateDoc } = useMockStore();
-  // Initialize with the first document id
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // Handle initial load of documents
+  // Initial load
   useEffect(() => {
-    if (!activeId && documents.length > 0) {
-      setActiveId(documents[0].id);
-    }
-  }, [documents, activeId]);
+    const init = async () => {
+      const workspaceRes = await getOrCreateWorkspace();
+      if (workspaceRes.success) {
+        setWorkspace(workspaceRes.data);
+        const docsRes = await getDocuments(workspaceRes.data.id);
+        if (docsRes.success) {
+          setDocuments(docsRes.data);
+          if (docsRes.data.length > 0) {
+            setActiveId(docsRes.data[0].id);
+          }
+        }
+      } else {
+        toast.error("Failed to connect to database");
+      }
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-  const currentDoc = documents.find(doc => doc.id === activeId);
-
-  // Sync title state when active document changes
-  useEffect(() => {
-    if (currentDoc) {
-      setTitle(currentDoc.title);
+  const onAdd = async (parentId?: string) => {
+    if (!workspace) return;
+    
+    const res = await createDocument(workspace.id, parentId);
+    if (res.success) {
+      setDocuments(prev => [...prev, res.data]);
+      setActiveId(res.data.id);
+      toast.success("Page created");
     } else {
-      setTitle("");
-    }
-  }, [activeId, currentDoc]);
-
-  const handleAdd = (parentId?: string | null) => {
-    const newDoc = createDoc("ws-1", parentId);
-    setActiveId(newDoc.id);
-  };
-
-  const onUpdateTitle = (newTitle: string) => {
-    setTitle(newTitle);
-    if (activeId) {
-      updateDoc(activeId, { title: newTitle || "Untitled" });
+      toast.error("Failed to create page");
     }
   };
 
-  const handleSelectDocument = (id: string) => {
-    setActiveId(id);
+  const onUpdate = async (id: string, values: Partial<Document>) => {
+    // Optimistic update
+    setDocuments(prev => prev.map(doc => 
+      doc.id === id ? { ...doc, ...values } : doc
+    ));
+
+    const res = await updateDocument(id, values);
+    if (!res.success) {
+      toast.error("Failed to save changes");
+      // Recovery logic could go here (fetching fresh data)
+    }
   };
+
+  const activeDocument = documents.find(doc => doc.id === activeId);
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
-    <SidebarProvider>
+    <div className="flex h-screen bg-background">
       <NotionSidebar 
-        documents={documents} 
-        workspaceId="ws-1" 
-        onAdd={handleAdd}
-        onSelect={handleSelectDocument}
+        documents={documents}
+        workspaceId={workspace?.id || ""}
+        onAdd={onAdd}
+        onSelect={setActiveId}
         activeId={activeId}
       />
-      <main className="flex-1 overflow-y-auto bg-background min-h-screen">
-        <div className="flex items-center p-4 border-b gap-x-2">
-          <SidebarTrigger />
-          <div className="h-4 w-[1px] bg-neutral-200 dark:bg-neutral-800 mx-2" />
-          <span className="text-sm font-medium text-muted-foreground truncate">
-            {currentDoc?.title || "Select a page"}
-          </span>
-        </div>
-        
-        {currentDoc ? (
-          <div className="flex flex-col">
-            <div className="w-full max-w-3xl mx-auto px-6 pt-20">
-              <Input
-                value={title}
-                onChange={(e) => onUpdateTitle(e.target.value)}
-                placeholder="Untitled"
-                className="text-5xl font-bold border-none focus-visible:ring-0 px-0 h-auto bg-transparent placeholder:opacity-50"
-              />
-            </div>
-            <DocumentEditor 
-              key={activeId} // CRITICAL: Reset editor component when document changes
-              documentId={currentDoc.id}
-              initialContent={currentDoc.content} 
-              onUpdate={(content) => updateDoc(currentDoc.id, { content })}
-            />
-          </div>
+      <main className="flex-1 overflow-y-auto">
+        {activeDocument ? (
+          <DocumentEditor 
+            key={activeDocument.id}
+            initialDocument={activeDocument}
+            onUpdate={(values) => onUpdate(activeDocument.id, values)}
+          />
         ) : (
-          <div className="flex flex-col items-center justify-center h-[80vh] text-muted-foreground">
-            <p className="text-lg">Select a page or create a new one to get started.</p>
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
+            <div className="bg-neutral-100 dark:bg-neutral-900 p-4 rounded-full">
+              <Loader2 className="h-10 w-10 text-neutral-400" />
+            </div>
+            <h2 className="text-xl font-medium text-foreground">Select or create a page</h2>
+            <p className="text-sm max-w-xs text-center">
+              Choose a document from the sidebar to start writing, or create a new one to get organized.
+            </p>
+            <button 
+              onClick={() => onAdd()}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Create first page
+            </button>
           </div>
         )}
       </main>
-    </SidebarProvider>
+    </div>
   );
 }
+
 
