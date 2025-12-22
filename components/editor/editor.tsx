@@ -14,6 +14,7 @@ export default function DocumentEditor({ initialContent, onUpdate, documentId }:
   const editor = useEditor({
     extensions: [StarterKit],
     content: initialContent ? JSON.parse(initialContent) : "",
+    immediatelyRender: false,
     editorProps: {
       attributes: {
         class: "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[500px]",
