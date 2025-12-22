@@ -9,18 +9,29 @@ import { useState, useEffect } from "react";
 
 export default function NotionClone() {
   const { documents, createDoc, updateDoc } = useMockStore();
-  const [activeId, setActiveId] = useState<string | null>(documents[0]?.id || null);
+  // Initialize with the first document id
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
+
+  // Handle initial load of documents
+  useEffect(() => {
+    if (!activeId && documents.length > 0) {
+      setActiveId(documents[0].id);
+    }
+  }, [documents, activeId]);
 
   const currentDoc = documents.find(doc => doc.id === activeId);
 
+  // Sync title state when active document changes
   useEffect(() => {
     if (currentDoc) {
       setTitle(currentDoc.title);
+    } else {
+      setTitle("");
     }
-  }, [currentDoc?.id]);
+  }, [activeId, currentDoc]);
 
-  const handleAdd = (parentId?: string) => {
+  const handleAdd = (parentId?: string | null) => {
     const newDoc = createDoc("ws-1", parentId);
     setActiveId(newDoc.id);
   };
@@ -32,12 +43,18 @@ export default function NotionClone() {
     }
   };
 
+  const handleSelectDocument = (id: string) => {
+    setActiveId(id);
+  };
+
   return (
     <SidebarProvider>
       <NotionSidebar 
         documents={documents} 
         workspaceId="ws-1" 
         onAdd={handleAdd}
+        onSelect={handleSelectDocument}
+        activeId={activeId}
       />
       <main className="flex-1 overflow-y-auto bg-background min-h-screen">
         <div className="flex items-center p-4 border-b gap-x-2">
@@ -59,6 +76,7 @@ export default function NotionClone() {
               />
             </div>
             <DocumentEditor 
+              key={activeId} // CRITICAL: Reset editor component when document changes
               documentId={currentDoc.id}
               initialContent={currentDoc.content} 
               onUpdate={(content) => updateDoc(currentDoc.id, { content })}

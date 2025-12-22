@@ -29,11 +29,11 @@ interface SidebarProps {
   documents: Document[];
   workspaceId: string;
   onAdd: (parentId?: string) => void;
+  onSelect: (id: string) => void;
+  activeId: string | null;
 }
 
-export function NotionSidebar({ documents, workspaceId, onAdd }: SidebarProps) {
-  const router = useRouter();
-  const params = useParams();
+export function NotionSidebar({ documents, workspaceId, onAdd, onSelect, activeId }: SidebarProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const onExpand = (id: string) => {
@@ -92,9 +92,10 @@ export function NotionSidebar({ documents, workspaceId, onAdd }: SidebarProps) {
                 level={0}
                 onExpand={onExpand}
                 onAdd={onAdd}
+                onSelect={onSelect}
                 expanded={expanded[doc.id]}
                 allDocuments={documents}
-                active={params.documentId === doc.id}
+                active={activeId === doc.id}
               />
             ))}
           </SidebarMenu>
@@ -109,6 +110,7 @@ function DocumentItem({
   level, 
   onExpand, 
   onAdd,
+  onSelect,
   expanded, 
   allDocuments,
   active
@@ -117,11 +119,11 @@ function DocumentItem({
   level: number; 
   onExpand: (id: string) => void;
   onAdd: (parentId: string) => void;
+  onSelect: (id: string) => void;
   expanded?: boolean;
   allDocuments: Document[];
   active?: boolean;
 }) {
-  const router = useRouter();
   const children = allDocuments.filter(doc => doc.parentDocumentId === document.id);
   
   const handleToggle = (e: React.MouseEvent) => {
@@ -134,7 +136,7 @@ function DocumentItem({
       <SidebarMenuItem>
         <SidebarMenuButton 
           isActive={active}
-          onClick={() => router.push(`/documents/${document.id}`)}
+          onClick={() => onSelect(document.id)}
           className="group"
           style={{ paddingLeft: `${(level * 12) + 12}px` }}
         >
@@ -177,8 +179,10 @@ function DocumentItem({
             level={level + 1}
             onExpand={onExpand}
             onAdd={onAdd}
+            onSelect={onSelect}
             expanded={expanded}
             allDocuments={allDocuments}
+            active={active}
           />
         ))
       )}
