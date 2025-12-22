@@ -12,6 +12,7 @@ import {
 import { Document, Workspace } from "@/lib/schema";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function NotionClone() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -77,41 +78,42 @@ export default function NotionClone() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <NotionSidebar 
-        documents={documents}
-        workspaceId={workspace?.id || ""}
-        onAdd={onAdd}
-        onSelect={setActiveId}
-        activeId={activeId}
-      />
-      <main className="flex-1 overflow-y-auto">
-        {activeDocument ? (
-          <DocumentEditor 
-            key={activeDocument.id}
-            initialDocument={activeDocument}
-            onUpdate={(values) => onUpdate(activeDocument.id, values)}
-          />
-        ) : (
-          <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
-            <div className="bg-neutral-100 dark:bg-neutral-900 p-4 rounded-full">
-              <Loader2 className="h-10 w-10 text-neutral-400" />
+    <SidebarProvider>
+      <div className="flex h-screen w-full bg-background overflow-hidden">
+        <NotionSidebar 
+          documents={documents}
+          workspaceId={workspace?.id || ""}
+          onAdd={onAdd}
+          onSelect={setActiveId}
+          activeId={activeId}
+        />
+        <main className="flex-1 overflow-y-auto w-full">
+          {activeDocument ? (
+            <DocumentEditor 
+              key={activeDocument.id}
+              initialDocument={activeDocument}
+              onUpdate={(values) => onUpdate(activeDocument.id, values)}
+            />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4">
+              <div className="bg-neutral-100 dark:bg-neutral-900 p-4 rounded-full">
+                <Loader2 className="h-10 w-10 text-neutral-400" />
+              </div>
+              <h2 className="text-xl font-medium text-foreground">Select or create a page</h2>
+              <p className="text-sm max-w-xs text-center">
+                Choose a document from the sidebar to start writing, or create a new one to get organized.
+              </p>
+              <button 
+                onClick={() => onAdd()}
+                className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+              >
+                Create first page
+              </button>
             </div>
-            <h2 className="text-xl font-medium text-foreground">Select or create a page</h2>
-            <p className="text-sm max-w-xs text-center">
-              Choose a document from the sidebar to start writing, or create a new one to get organized.
-            </p>
-            <button 
-              onClick={() => onAdd()}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Create first page
-            </button>
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }
-
 
