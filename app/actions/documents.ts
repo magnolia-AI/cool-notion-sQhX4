@@ -4,14 +4,7 @@ import db from "@/lib/db";
 import { documents, workspaces, type Document, type Workspace, type NewDocument } from "@/lib/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-
-export type ActionResult<T = any> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: string;
-};
+import { type ActionResult } from "@/app/types/actions";
 
 const DEFAULT_USER_ID = "user_default";
 
