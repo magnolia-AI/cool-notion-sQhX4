@@ -1,27 +1,28 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
-// // Example users table - modify according to your needs
-// export const users = pgTable('users', {
-//   id: serial('id').primaryKey(),
-//   name: varchar('name', { length: 255 }).notNull(),
-//   email: varchar('email', { length: 255 }).notNull().unique(),
-//   createdAt: timestamp('created_at').defaultNow().notNull(),
-//   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-// });
+// Fallback Mock Data Types
+export interface Workspace {
+  id: string;
+  name: string;
+  userId: string;
+  icon?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// // Example posts table - modify according to your needs
-// export const posts = pgTable('posts', {
-//   id: serial('id').primaryKey(),
-//   title: varchar('title', { length: 255 }).notNull(),
-//   content: text('content'),
-//   published: boolean('published').default(false).notNull(),
-//   authorId: integer('author_id').references(() => users.id),
-//   createdAt: timestamp('created_at').defaultNow().notNull(),
-//   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-// });
+export interface Document {
+  id: string;
+  title: string;
+  content: string | null;
+  workspaceId: string;
+  parentDocumentId: string | null;
+  userId: string;
+  isArchived: boolean;
+  isPublished: boolean;
+  icon: string | null;
+  coverImage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// // Type exports
-// export type User = typeof users.$inferSelect;
-// export type NewUser = typeof users.$inferInsert;
-// export type Post = typeof posts.$inferSelect;
-// export type NewPost = typeof posts.$inferInsert; 
