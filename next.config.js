@@ -39,7 +39,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['*.fly.dev'],
+      allowedOrigins: ['*.fly.dev', '*.vy.app', 'vy.app'],
     },
   },
   allowedDevOrigins: ['vy.app', '*.vy.app'],
@@ -91,3 +91,4 @@ const nextConfig = {
 }
 
 module.exports = nextConfig
+
